@@ -1,3 +1,14 @@
-__init__.py
+# Entornos virtuales de Python
+venv/
 __pycache__/
-/venv
+
+# Variables de entorno
+.env
+
+# Archivos de configuración de IDE
+*.iml
+.vscode/
+.idea/
+
+# Otros
+.DS_Store

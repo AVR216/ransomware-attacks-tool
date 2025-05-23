@@ -1,8 +1,9 @@
 export interface HeatmapItem {
     country: string;
     victims: number;
-    latlng?: [number, number];
-    countryName?: string;
+    lat: number;
+    lng: number;
+    name: string;
 }
 
 export interface HeatmapResponse {

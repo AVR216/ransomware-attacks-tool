@@ -10,8 +10,6 @@ class Config:
             load_dotenv()
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance._load_env_variables()
-            print('nueva instancia')
-        print('misma instancia')
         return cls._instance
     
     def _load_env_variables(self):
