@@ -1,0 +1,9 @@
+- se debe cachear la respuesta de victimas por país ya que devuelve mucha data.
+
+- La data de CERN no es necesario cachearla
+
+- La idea es hacer estos dos endpoints en el backend y cuando en el 
+heatmap se le de click a algún país. Se abra un modal dónde 
+se pueda visualizar mucha mas data de ese país y que al final
+haya una seccion que diga: 
+¿Viste algo sospechoso o una anomalía? >> Reportar al cern

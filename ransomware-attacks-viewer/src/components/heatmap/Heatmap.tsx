@@ -44,7 +44,8 @@ export const Heatmap = () => {
                 },
                  properties: {
                     weight: p.victims,
-                    name: p.name
+                    name: p.name,
+                    group: p.top_group
                     },
                 }))
             };
@@ -103,6 +104,7 @@ export const Heatmap = () => {
         const props = feature.properties as any;
         const victims = props.weight as number;
         const name = props.name as string;
+        const group = props.group as string;
         popup = new mapboxgl.Popup({
           closeButton: false,
           closeOnClick: false
@@ -110,7 +112,8 @@ export const Heatmap = () => {
         .setLngLat(coords)
         .setHTML(`<div style="text-align:center">          
                 <strong>${name}</strong><br/>
-                Victims: ${victims}
+                Attacks: ${victims} <br/>
+                Group: ${group} <br/>
             </div>`)
         .addTo(map);
       });
@@ -120,8 +123,11 @@ export const Heatmap = () => {
       });
     });
 
-    return () => map.remove();
-
+    return () => {
+      // Destroy subscription to events
+      map.remove()
+    }
+    
     }, [data]);
 
     if (loading) {
@@ -133,8 +139,14 @@ export const Heatmap = () => {
     }
 
     return (
-        <div ref={mapContainerRef}
-            style={{width: '100%', height: '100vh'}}>
-        </div>
+        <section aria-label="Heatmap attacks" className="bg-[#1a1a1a] text-gray-500 h-screen flex flex-col">
+        <header className="p-4">
+          <h1 className="text-2xl font-bold text-center">Heatmap of ransomware attacks</h1>
+        </header>
+          <div 
+            ref={mapContainerRef}
+            className="w-[90%] h-[80vh] rounded-lg shadow-lg p-3 mx-auto"
+          />
+      </section>
     )
 }
