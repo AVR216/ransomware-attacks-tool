@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-
-type Data<T> = T | null;
-type ErrorType = Error | null;
+import { Data, ErrorType } from "../models";
 
 interface Params<T> {
     data: Data<T>;
