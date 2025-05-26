@@ -1,5 +1,4 @@
 from src.services.cache.cache_policy import CachePolicyEnumType
-
 from src.services.cache.cache_strategies import (
     StaticCacheStrategy,
     ParamCacheStrategy,

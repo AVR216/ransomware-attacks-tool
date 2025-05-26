@@ -1,10 +1,14 @@
 import requests
+import logging
 
-from src.config.config import Config
+from src.config.config import config
+from src.exceptions.exceptions import RansomwareException
+
+logger = logging.getLogger(__name__)
 
 class RansomwareClient:
 
-    BASE_URL = Config().RANSOMWARE_BASE_URL
+    BASE_URL = config.RANSOMWARE_BASE_URL
 
     def base_fetch(self, path: str):
         try:
@@ -13,8 +17,8 @@ class RansomwareClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching data from {url}: {e}")
-            return []
+            logger.error(f"Error fetching data from {url}: {e}")
+            raise RansomwareException(message='Error fetching client data', code=500)
 
     def get_all_cyberattacks(self):
         return self.base_fetch('allcyberattacks')

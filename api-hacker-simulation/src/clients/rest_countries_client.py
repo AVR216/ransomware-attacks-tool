@@ -1,6 +1,11 @@
+import logging
+import requests
+
 from src.services.cache.generic_cache_service import GenericCacheService
 from src.services.cache.cache_policy import CachePolicyEnumType
-import requests
+from src.exceptions.exceptions import RansomwareException
+
+logger = logging.getLogger(__name__)
 
 class RestCountriesClient:
     def __init__(self):
@@ -34,12 +39,12 @@ class RestCountriesClient:
             return countries
 
         except requests.RequestException as e:
-            print(f"[RestCountriesClient] Error fetching countries: {e}")
-            return []
+            logger.error(f"[RestCountriesClient] Error fetching countries: {e}")
+            raise RansomwareException(message='Error fetching countries info', code=500)
 
     def get_country_info(self):
         """
-        Devuelve la lista de países (nombre común, cca2, lat y lng),
-        usando cache local si ya existe.
+        Returns countries list with (common, cca2, lat and lng),
+        using local cache if already exists
         """
         return self.cache.get()

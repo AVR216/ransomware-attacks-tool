@@ -9,10 +9,9 @@ export const Sidebar = ({items}: SidebarProps) => {
     return(
          <aside className="w-64 bg-black text-gray-100 h-screen shadow-lg flex flex-col">
             <div className="p-6 border-b border-gray-700">
-            <h2 className="text-2xl font-bold">Mi App</h2>
+            <h2 className="text-2xl text-[#00FF00] font-bold">RansomScan Tool</h2>
             </div>
 
-            {/* Navegación */}
             <nav className="flex-1 overflow-y-auto">
             <ul className="mt-4 space-y-1">
                 {items.map(({ to, label }) => (

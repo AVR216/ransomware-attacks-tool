@@ -1,10 +1,15 @@
-from collections import defaultdict, Counter
+from collections import Counter
 from datetime import datetime
+import logging
+
 
 from src.clients.rest_countries_client import RestCountriesClient
 from src.clients.ransomware_client import RansomwareClient
 from src.services.cache.generic_cache_service import GenericCacheService
 from src.services.cache.cache_policy import CachePolicyEnumType
+from src.exceptions.exceptions import RansomwareException
+
+logger = logging.getLogger(__name__)
 
 class HeatmapService:
 
@@ -31,7 +36,8 @@ class HeatmapService:
 
 
     def get_heatmap_info(self):
-    # 1. Obtener ataques
+        """Return all info for create a heatmap"""
+        # Get all atacks from its cacheable endpoint
         attacks = self.cache_all_cyberattacks.get()
         country_counts = {}
 
@@ -43,7 +49,7 @@ class HeatmapService:
 
         sorted_data = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
 
-        # 2. Obtener recent victims para agrupar por país y grupo
+        # Get recent victims to group by country and groups
         recent_victims = self.cache_recent_victims.get()
         country_groups = {}
 
@@ -57,13 +63,13 @@ class HeatmapService:
                 country_groups[code] = {}
             country_groups[code][group] = country_groups[code].get(group, 0) + 1
 
-        # 3. Encontrar el grupo más frecuente por país
+        # Find the most frequently group
         top_group_by_country = {}
         for code, group_counts in country_groups.items():
             top_group = max(group_counts.items(), key=lambda x: x[1])[0]
             top_group_by_country[code] = top_group
 
-        # 4. Cargar info de países
+        # Load countries info
         country_list = self.rest_countries_client.get_country_info()
         country_lookup = {
             c["cca2"]: {
@@ -74,82 +80,103 @@ class HeatmapService:
             for c in country_list
         }
 
-        # 5. Construir resultado enriquecido
+        # Build enriched result
         result = []
         for code, victims in sorted_data:
             info = country_lookup.get(code.upper())
             result.append({
                 "country": code,
                 "victims": victims,
-                "name": info["name"] if info else "Unknown",
-                "lat": info["lat"] if info else 0.0,
-                "lng": info["lng"] if info else 0.0,
+                "name": info.get("name", "Unknown") if info else "Unknown",
+                "lat": info.get("lat", 0.0) if info else 0.0,
+                "lng": info.get("lng", 0.0) if info else 0.0,
                 "top_group": top_group_by_country.get(code.upper(), "Unknown")
             })
+
+        logger.info('Get heatmap info process successfully')
 
         return result
 
 
     def info_by_country(self, country_code: str) -> dict:
         """
-        Devuelve información relevante de un país usando la cache de recent victims,
-        agrupa víctimas, sectores, grupos y stats de infostealer, con chequeos seguros.
+        Returns a country-level summary combining:
+        - Historical victims (/countryvictims)
+        - Recent victims (/recentvictims), filtered by country
+        It aggregates total historical and recent counts, top groups, top sectors, last attack date, and infostealer statistics.
         """
-        victims = self.cache_recent_victims.get(country_code)
-        if not victims:
+        code = country_code.upper()
+
+        # Historical by country and ALL cached recent data
+        data_by_country = self.web_client.get_country_victims(code) or []
+        all_recent = self.cache_recent_victims.get() or []
+
+        # Filter only the recent ones from this country
+        recent = [
+            r for r in all_recent
+            if r.get("country", "").upper() == code
+        ]
+
+        if not data_by_country and not recent:
             return {
-                "country": country_code,
-                "total_victims": 0,
+                "country": code,
+                "total_recent": 0,
                 "top_groups": [],
                 "top_sectors": {},
                 "last_attack": None,
                 "infostealers": {}
             }
 
-        total_victims = len(victims)
+        # Initialize counters and date
+        total_recent = len(recent)
         group_counter = Counter()
         sector_counter = Counter()
         last_attack_date = None
         infostealer_counter = Counter()
 
-        for v in victims:
-            # Grupos atacantes
-            group = v.get("group")
-            if group:
-                group_counter[group] += 1
+        # Processing historical and recents filtered
+        for v in data_by_country + recent:
+            # Groups
+            grp = v.get("group_name")
+            if grp:
+                group_counter[grp] += 1
 
-            # Sectores (vacíos → "Unknown")
-            sector = v.get("activity") or "Unknown"
-            sector_counter[sector] += 1
+            # Sectors (empty → "Unknown")
+            sec = v.get("activity") or "Unknown"
+            sector_counter[sec] += 1
 
-            # Última fecha de ataque
-            discovered = v.get("discovered")
-            if discovered:
+            # Last attack date
+            dt_str = v.get("discovered") or v.get("attackdate")
+            if dt_str:
                 try:
-                    dt = datetime.fromisoformat(discovered)
+                    dt = datetime.fromisoformat(dt_str)
                     if not last_attack_date or dt > last_attack_date:
                         last_attack_date = dt
                 except Exception:
-                    pass
+                    raise RansomwareException('Error getting last attack date', 500)
 
-            # Stats de infostealer, chequeo de tipo
+            # Infostealers
             inf = v.get("infostealer")
             if isinstance(inf, dict):
-                stats = inf.get("infostealer_stats") or {}
-                for name, count in stats.items():
-                    infostealer_counter[name] += count
+                stats = inf.get("infostealer_stats", {})
+                for name, cnt in stats.items():
+                    infostealer_counter[name] += cnt
 
+        logger.info('Info by country process successfully')
+
+        # Build and return
         return {
-            "country": country_code,
-            "total_victims": total_victims,
+            "country": code,
+            "total_recent": total_recent,
             "top_groups": [g for g, _ in group_counter.most_common(3)],
             "top_sectors": dict(sector_counter.most_common(3)),
-            "last_attack": last_attack_date.strftime("%Y-%m-%d %H:%M:%S") if last_attack_date else None,
+            "last_attack": (last_attack_date.strftime("%Y-%m-%d %H:%M:%S")
+                            if last_attack_date else None),
             "infostealers": dict(infostealer_counter.most_common(3))
         }
 
-    
 
+    
     def get_cert_info_by_country(self, country_code: str):
         certs = self.web_client.get_certs_by_country(country_code)
         return certs
