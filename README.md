@@ -137,4 +137,4 @@ localhost:5173
 ![Dangerous Groups](assets/images/dangerous_groups.png)
 
 ## How the data was processed
-First, the documentation of the ransomware API was reviewed to identify which endpoints were useful to achieve the goal. After analyzing the responses from these endpoints, it was found that some returned a large amount of data. Therefore, a caching strategy using JSON files was implemented to make these time-consuming requests only once—each time the update date from the ransomware API changed.
+First, the documentation of the ransomware API was reviewed to identify which endpoints were useful to achieve the goal. After analyzing the responses from these endpoints, it was found that some returned a large amount of data. Therefore, a caching strategy using JSON files was implemented to make these time-consuming requests only once—each time the update date from the ransomware API changed. The retrieved data was then primarily grouped by country to extract relevant information, such as the total number of attacks or the most dangerous groups in each country. Finally, a risk score was assigned based on the activity level of each group.
