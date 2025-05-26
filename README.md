@@ -3,8 +3,6 @@
 ![Backend](https://img.shields.io/badge/Backend-Flask-blue)
 ![Frontend](https://img.shields.io/badge/Frontend-React%20%2B%20Vite%20%2B%20TypeScript-61DAFB?logo=react)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
-
 
 ## 📚 Table of Contents
 
